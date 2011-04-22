@@ -15,6 +15,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
@@ -37,6 +38,7 @@ public class MCTelnet extends JavaPlugin {
     private Thread listenerThread;
     private boolean run = false;
     int port = 8765;
+    InetAddress listenAddress;
     
     public MCTelnet()
     {
@@ -53,10 +55,19 @@ public class MCTelnet extends JavaPlugin {
         if(listenerSocket != null)
         {
             try {
-                listenerSocket.close();
+                synchronized (listenerSocket)
+                {
+                    if(listenerSocket!=null)
+                        listenerSocket.close();
+                }
             } catch (IOException ex) {
                 Logger.getLogger("Minecraft").log(Level.SEVERE, null, ex);
             }
+        }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(MCTelnet.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -69,8 +80,25 @@ public class MCTelnet extends JavaPlugin {
             if(this.getConfiguration().getBoolean("encryptPasswords", false))
                 encryptPasswords();
             port = this.getConfiguration().getInt("telnetPort", port);
+            try
+            {
+            String address = this.getConfiguration().getString("listenAddress",null);
+            if(address!=null)
+                listenAddress = InetAddress.getByName(address);
+            }
+            catch (Exception ex)
+            {
+                System.out.println("[MCTelnet] Exception when trying to binding to custom address:" + ex.getMessage());
+            }
+            if(listenAddress != null)
+            {
+                listenerSocket = new java.net.ServerSocket(port, 10, listenAddress);
+            }
+            else
+            {
+                listenerSocket = new java.net.ServerSocket(port,10);
+            }
             clientHolder = new ArrayList<TelnetListener>();
-            listenerSocket = new java.net.ServerSocket(port);
             listenerThread = new Thread(new Runnable() {
                 public void run() {
                     acceptConnections();
@@ -80,8 +108,7 @@ public class MCTelnet extends JavaPlugin {
             Field cfield = CraftServer.class.getDeclaredField("console");
             cfield.setAccessible(true);
             mcserv = (MinecraftServer) cfield.get((CraftServer)getServer());
-
-            Logger.getLogger("Minecraft").log(Level.INFO,"[MCTelnet] - Listening on port: " + port + "!");
+            Logger.getLogger("Minecraft").log(Level.INFO,"[MCTelnet] - Listening on: " + listenerSocket.getInetAddress().getHostAddress() + ":" + port);
         } catch (Exception ex) {
             Logger.getLogger("Minecraft").log(Level.SEVERE, "[MCTelnet] - Unable to Enable! Error: " + ex.getMessage());
             this.setEnabled(false);
@@ -174,6 +201,11 @@ public class MCTelnet extends JavaPlugin {
             this.getConfiguration().setProperty("telnetPort", 8765);
             this.getConfiguration().save();
         }
+        testConfig = this.getConfiguration().getString("listenAddress");
+        if (testConfig == null || testConfig.equals("")) {
+            this.getConfiguration().setProperty("listenAddress", "0.0.0.0");
+            this.getConfiguration().save();
+        }
         testConfig = this.getConfiguration().getString("rootPass");
         if (testConfig == null || testConfig.equals("")) {
             this.getConfiguration().setProperty("rootPass", "abcd");
@@ -190,6 +222,7 @@ public class MCTelnet extends JavaPlugin {
             this.getConfiguration().setProperty("encryptPasswords", true);
             this.getConfiguration().save();
         }
+
     }
 
     @Override

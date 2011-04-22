@@ -15,21 +15,17 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import net.minecraft.server.ICommandListener;
 import net.minecraft.server.MinecraftServer;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.command.PluginCommand;
-import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.entity.Player;
 import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
  * @author Administrator
  */
-public class TelnetListener extends Handler implements CommandSender {
+public class TelnetListener extends Handler implements CommandSender, ICommandListener {
 
     private boolean run;
     private boolean isAuth;
@@ -43,8 +39,8 @@ public class TelnetListener extends Handler implements CommandSender {
     BufferedWriter outstream;
     MCTelnet parent;
     String ip;
-    String passRegex = "[^a-zA-Z0-9\\-]";
-    String commandRegex = "[^a-zA-Z0-9 \\-]";
+    String passRegex = "[^a-zA-Z0-9\\-\\.\\_]";
+    String commandRegex = "[^a-zA-Z0-9 \\-\\.\\_]";
 
     public TelnetListener(Socket inSock, MinecraftServer imcserv, MCTelnet iparent)
     {
@@ -80,7 +76,16 @@ public class TelnetListener extends Handler implements CommandSender {
             Logger.getLogger("Minecraft").log(Level.SEVERE, null, ex);
             run = false;
         }
-        authenticateLoop();
+        if(!clientSocket.getInetAddress().isLoopbackAddress() || !parent.getConfiguration().getBoolean("allowAuthlessLocalhost", false))
+        {
+            authenticateLoop();
+        }
+        else
+        {
+            isAuth = true;
+            isRoot = true;
+            authUser = parent.getConfiguration().getString("rootUser");
+        }
         commandLoop();
         shutdown();
     }
@@ -230,8 +235,9 @@ public class TelnetListener extends Handler implements CommandSender {
                     if (!clientSocket.isClosed()) {
                         if (isRoot || allowCommand) {
                             //((CraftServer)getServer()).dispatchCommand(new ConsoleCommandSender(getServer()), command);
-                            mcserv.a(command, mcserv);
-                            //parent.getServer().getPlayer(authUser).performCommand(command);
+                            mcserv.issueCommand(command, this);
+                            System.out.println("[MCTelnet] "+authUser+" issued command: " + command);
+                            
                         } else {
                             if(!command.equals(""))
                             {
@@ -344,5 +350,9 @@ public class TelnetListener extends Handler implements CommandSender {
             } catch (IOException ex) {
             }
         }
+    }
+
+    public String getName() {
+        return authUser;
     }
 }

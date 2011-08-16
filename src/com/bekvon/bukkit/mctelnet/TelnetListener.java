@@ -11,21 +11,25 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import net.minecraft.server.ICommandListener;
 import net.minecraft.server.MinecraftServer;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.config.ConfigurationNode;
 
 /**
  *
  * @author Administrator
  */
-public class TelnetListener extends Handler implements CommandSender, ICommandListener {
+public class TelnetListener extends Handler implements CommandSender {
 
     private boolean run;
     private boolean isAuth;
@@ -235,9 +239,9 @@ public class TelnetListener extends Handler implements CommandSender, ICommandLi
                     if (!clientSocket.isClosed()) {
                         if (isRoot || allowCommand) {
                             //((CraftServer)getServer()).dispatchCommand(new ConsoleCommandSender(getServer()), command);
-                            mcserv.issueCommand(command, this);
+                            //mcserv.issueCommand(command, this);
+                            parent.getServer().dispatchCommand(this, command);
                             System.out.println("[MCTelnet] "+authUser+" issued command: " + command);
-                            
                         } else {
                             if(!command.equals(""))
                             {
@@ -321,6 +325,8 @@ public class TelnetListener extends Handler implements CommandSender, ICommandLi
     }
 
     public boolean isOp() {
+        if(authUser.equalsIgnoreCase("console"))
+            return true;
         if(parent.getConfiguration().getBoolean("allowOPsAll",false))
             return parent.getServer().getPlayer(authUser).isOp();
         return false;
@@ -354,5 +360,53 @@ public class TelnetListener extends Handler implements CommandSender, ICommandLi
 
     public String getName() {
         return authUser;
+    }
+
+    public boolean isPermissionSet(String string) {
+        return true;
+    }
+
+    public boolean isPermissionSet(Permission prmsn) {
+        return true;
+    }
+
+    public boolean hasPermission(String string) {
+        return true;
+    }
+
+    public boolean hasPermission(Permission prmsn) {
+        return true;
+    }
+
+    public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln) {
+        return null;
+    }
+
+    public PermissionAttachment addAttachment(Plugin plugin) {
+        return null;
+    }
+
+    public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln, int i) {
+        return null;
+    }
+
+    public PermissionAttachment addAttachment(Plugin plugin, int i) {
+        return null;
+    }
+
+    public void removeAttachment(PermissionAttachment pa) {
+        return;
+    }
+
+    public void recalculatePermissions() {
+        return;
+    }
+
+    public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+        return null;
+    }
+
+    public void setOp(boolean bln) {
+        return;
     }
 }

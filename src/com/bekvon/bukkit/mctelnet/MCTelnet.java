@@ -34,7 +34,6 @@ import org.bukkit.util.config.ConfigurationNode;
 public class MCTelnet extends JavaPlugin {
     private ServerSocket listenerSocket;
     private ArrayList<TelnetListener> clientHolder;
-    private MinecraftServer mcserv;
     private Thread listenerThread;
     private boolean run = false;
     int port = 8765;
@@ -107,7 +106,6 @@ public class MCTelnet extends JavaPlugin {
             listenerThread.start();
             Field cfield = CraftServer.class.getDeclaredField("console");
             cfield.setAccessible(true);
-            mcserv = (MinecraftServer) cfield.get((CraftServer)getServer());
             Logger.getLogger("Minecraft").log(Level.INFO,"[MCTelnet] - Listening on: " + listenerSocket.getInetAddress().getHostAddress() + ":" + port);
         } catch (Exception ex) {
             Logger.getLogger("Minecraft").log(Level.SEVERE, "[MCTelnet] - Unable to Enable! Error: " + ex.getMessage());
@@ -168,7 +166,7 @@ public class MCTelnet extends JavaPlugin {
                 Socket client = listenerSocket.accept();
                 if(client != null)
                 {
-                    clientHolder.add(new TelnetListener(client,mcserv,this));
+                    clientHolder.add(new TelnetListener(client,this));
                     System.out.print("[MCTelnet] - Client connected: " + client.getInetAddress().toString());
                 }
                 for(int i = 0; i < clientHolder.size(); i++)
@@ -188,7 +186,6 @@ public class MCTelnet extends JavaPlugin {
             temp.killClient();
         }
         listenerSocket = null;
-        mcserv = null;
         clientHolder.clear();
         clientHolder = null;
         this.setEnabled(false);

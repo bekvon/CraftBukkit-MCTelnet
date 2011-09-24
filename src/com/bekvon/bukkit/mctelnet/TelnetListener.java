@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import net.minecraft.server.MinecraftServer;
+import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.permissions.Permission;
@@ -44,12 +45,11 @@ public class TelnetListener extends Handler implements CommandSender {
     MCTelnet parent;
     String ip;
     String passRegex = "[^a-zA-Z0-9\\-\\.\\_]";
-    String commandRegex = "[^a-zA-Z0-9 \\-\\.\\_]";
+    String commandRegex = "[^a-zA-Z0-9 \\-\\.\\_\\\"]";
 
-    public TelnetListener(Socket inSock, MinecraftServer imcserv, MCTelnet iparent)
+    public TelnetListener(Socket inSock, MCTelnet iparent)
     {
         run = true;
-        mcserv = imcserv;
         clientSocket = inSock;
         parent = iparent;
         passRegex = parent.getConfiguration().getString("passwordRegex",passRegex);
@@ -294,7 +294,7 @@ public class TelnetListener extends Handler implements CommandSender {
         try {
             if(!clientSocket.isClosed())
             {
-                outstream.write(record.getMessage()+"\r\n:");
+                outstream.write(ChatColor.stripColor(record.getMessage())+"\r\n:");
                 outstream.flush();
             }
         } catch (IOException ex) {
@@ -317,6 +317,7 @@ public class TelnetListener extends Handler implements CommandSender {
         if(clientSocket.isConnected())
         {
             try {
+                string = ChatColor.stripColor(string);
                 outstream.write(string + "\r\n:");
                 outstream.flush();
             } catch (IOException ex) {

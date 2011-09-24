@@ -1,6 +1,6 @@
 name: MCTelnet
 main: com.bekvon.bukkit.mctelnet.MCTelnet
-version: 1.2.6
+version: 1.2.7
 description: Telnet console access plugin.
 author: bekvon
 commands:
